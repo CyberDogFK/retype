@@ -3,6 +3,7 @@ use std::path::Path;
 use std::process::exit;
 use clap::Parser;
 use log::error;
+use rstype::database::fetch_text_from_id;
 
 #[derive(Parser, Debug)]
 struct Arguments {
@@ -36,7 +37,6 @@ fn main() {
         load_text_from_file(file_path)
     } else if let Some(id) = args.id {
         load_from_database(id)
-        todo!("Load from database not implemented yet");
     } else if let Some(difficulty) = args.difficulty {
         todo!("Load from database based on difficulty not implemented yet");
     } else {
@@ -48,8 +48,20 @@ fn main() {
     todo!();
 }
 
-fn load_from_database(id: u32) -> Result<FileText, String> {
-
+/// Load given text from database with given id.
+/// # Arguments
+/// * `text_id` - ID of text to load
+/// $ Returns 
+/// * `Result<FileText>` containing file contents or error message
+fn load_from_database(text_id: u32) -> Result<FileText, String> {
+    let row_count = 6000;
+    if 1 <= text_id && text_id <= row_count {
+        let text = fetch_text_from_id(text_id)
+            .map_err(|e| format!("Error fetching text: {}", e))?;
+        Ok((text, text_id.to_string()))
+    } else { 
+        Err(format!("ID out of range: {}", text_id))
+    }
 }
 
 type FileText = (String, String);
