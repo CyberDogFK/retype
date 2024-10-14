@@ -33,21 +33,23 @@ fn main() {
     } else if args.history {
         todo!("History not implemented yet");
     } else if let Some(file_path) = args.file {
-        load_text_from_file(file_path).unwrap_or_else(|e| {
-            error!("{}", e);
-            exit(1)
-        })
+        load_text_from_file(file_path)
     } else if let Some(id) = args.id {
+        load_from_database(id)
         todo!("Load from database not implemented yet");
     } else if let Some(difficulty) = args.difficulty {
         todo!("Load from database based on difficulty not implemented yet");
     } else {
         todo!("Load bases on random dificulty not implemented yet")
-    };
-
-
-
+    }.unwrap_or_else(|e| {
+        error!("{}", e);
+        exit(1)
+    });
     todo!();
+}
+
+fn load_from_database(id: u32) -> Result<FileText, String> {
+
 }
 
 type FileText = (String, String);
