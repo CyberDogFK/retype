@@ -3,8 +3,8 @@
 /// * `serial_id` - The unique ID of database entry.
 /// # Returns
 /// * `Result<String>` - The text corresponding to the ID.
-pub fn fetch_text_from_id(serial_id: u32) -> Result<String, sqlite::Error> {
-    let conn = sqlite::open("data.db")?;
+pub fn fetch_text_from_id(serial_id: u32, database_path: &str) -> Result<String, sqlite::Error> {
+    let conn = sqlite::open(database_path)?;
         // .map_err(|e| format!("Error opening database: {}", e))?;
 
     let query = "SELECT txt FROM data WHERE id = ?";

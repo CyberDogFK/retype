@@ -56,7 +56,7 @@ fn main() {
 fn load_from_database(text_id: u32) -> Result<FileText, String> {
     let row_count = 6000;
     if 1 <= text_id && text_id <= row_count {
-        let text = fetch_text_from_id(text_id)
+        let text = fetch_text_from_id(text_id, "data.db")
             .map_err(|e| format!("Error fetching text: {}", e))?;
         Ok((text, text_id.to_string()))
     } else { 
