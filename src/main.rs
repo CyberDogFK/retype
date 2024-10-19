@@ -1,10 +1,13 @@
+use std::env::vars_os;
 use std::error::Error;
+use std::io::{stdout, Stdout};
 use std::path::Path;
 use std::process::exit;
 use clap::Parser;
 use log::error;
 use rstype::database::{fetch_text_with_id, load_text_from_database, load_text_from_database_based_on_difficulty, load_text_from_database_with_random_difficulty};
 use rstype::{load_text_from_file, PreparedText};
+use rstype::app::App;
 
 #[derive(Parser, Debug)]
 struct Arguments {
@@ -25,12 +28,30 @@ struct Arguments {
     history: bool
 }
 
+
 fn main() {
     let args = Arguments::parse();
     println!("Hello, world!");
-    let database_file = "data.db";
 
-    let file_text: PreparedText = if args.version {
+    // Start the parser
+    let prepared_text = resolve_command_line_args(args);
+
+    let mut app = App::from_prepared_text(prepared_text);
+    
+    let window = pancurses::initscr();
+    window.addstr("Hello, world!");
+    
+    // curses.wrapper(app.main());
+    
+    
+
+
+    todo!();
+}
+
+fn resolve_command_line_args(args: Arguments) -> PreparedText {
+    let database_file = "data.db";
+    let prepared_text: PreparedText = if args.version {
         println!("Rstype version 0.1.0");
         exit(0)
     } else if args.history {
@@ -47,7 +68,7 @@ fn main() {
         error!("{}", e);
         exit(1)
     });
-    todo!();
+    prepared_text
 }
 
 

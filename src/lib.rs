@@ -1,6 +1,8 @@
 use std::path::Path;
 
 pub mod database;
+pub mod app;
+pub mod calculations;
 
 pub type PreparedText = (String, String);
 
