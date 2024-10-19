@@ -3,7 +3,8 @@ use std::path::Path;
 use std::process::exit;
 use clap::Parser;
 use log::error;
-use rstype::database::fetch_text_from_id;
+use rstype::database::fetch_text_with_id;
+use rstype::{load_text_from_database, load_text_from_file, PreparedText};
 
 #[derive(Parser, Debug)]
 struct Arguments {
@@ -28,7 +29,7 @@ fn main() {
     let args = Arguments::parse();
     println!("Hello, world!");
 
-    let file_text: FileText = if args.version {
+    let file_text: PreparedText = if args.version {
         println!("Rstype version 0.1.0");
         exit(0)
     } else if args.history {
@@ -36,7 +37,7 @@ fn main() {
     } else if let Some(file_path) = args.file {
         load_text_from_file(file_path)
     } else if let Some(id) = args.id {
-        load_from_database(id)
+        load_text_from_database(id)
     } else if let Some(difficulty) = args.difficulty {
         todo!("Load from database based on difficulty not implemented yet");
     } else {
@@ -48,36 +49,4 @@ fn main() {
     todo!();
 }
 
-/// Load given text from database with given id.
-/// # Arguments
-/// * `text_id` - ID of text to load
-/// $ Returns 
-/// * `Result<FileText>` containing file contents or error message
-fn load_from_database(text_id: u32) -> Result<FileText, String> {
-    let row_count = 6000;
-    if 1 <= text_id && text_id <= row_count {
-        let text = fetch_text_from_id(text_id, "data.db")
-            .map_err(|e| format!("Error fetching text: {}", e))?;
-        Ok((text, text_id.to_string()))
-    } else { 
-        Err(format!("ID out of range: {}", text_id))
-    }
-}
 
-type FileText = (String, String);
-
-/// Load file contents
-/// # Arguments
-/// * `file_path` - Path to file
-/// # Returns
-/// * `Result<FileText>` containing file contents or error message
-fn load_text_from_file<P: AsRef<Path>>(file_path: P) -> Result<FileText, String> {
-    if std::fs::exists(&file_path)
-        .map_err(|e| format!("Error checking file: {}", e))? {
-        let text = std::fs::read_to_string(&file_path)
-            .map_err(|e| format!("Error reading file: {}", e))?;
-        Ok((text, file_path.as_ref().display().to_string()))
-    } else {
-        Err(format!("File not found: {}", file_path.as_ref().display()))
-    }
-}

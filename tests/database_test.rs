@@ -1,4 +1,3 @@
-use uuid::Uuid;
 use rstype::database;
 
 #[test]
@@ -15,7 +14,7 @@ fn test_fetching_text_from_db() {
         format!("INSERT INTO data (txt) VALUES ('{}');", value),
     ).unwrap();
     let serial_id = 1;
-    let result = database::fetch_text_from_id(serial_id, database_path).unwrap();
+    let result = database::fetch_text_with_id(serial_id, database_path).unwrap();
     assert_eq!(result, value);
     std::fs::remove_file(database_path).unwrap()
 }
