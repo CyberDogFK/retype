@@ -40,7 +40,7 @@ pub fn load_text_from_database_based_on_difficulty(difficulty: u32, database_pat
             .map_err(|e| format!("Error fetching text: {}", e))?;
         Ok((text, text_id.to_string()))
     } else {
-        Err(format!("Difficulty out of range: {}", difficulty))
+        Err(format!("Difficulty out of range: {}, select in range [1,5]", difficulty))
     }
 
 }
