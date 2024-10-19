@@ -1,5 +1,4 @@
 use std::path::Path;
-use crate::database::fetch_text_with_id;
 
 pub mod database;
 
@@ -21,18 +20,3 @@ pub fn load_text_from_file<P: AsRef<Path>>(file_path: P) -> Result<PreparedText,
     }
 }
 
-/// Load given text from database with given id.
-/// # Arguments
-/// * `text_id` - ID of text to load
-/// $ Returns 
-/// * `Result<FileText>` containing file contents or error message
-pub fn load_text_from_database(text_id: u32) -> Result<PreparedText, String> {
-    let row_count = 6000;
-    if 1 <= text_id && text_id <= row_count {
-        let text = fetch_text_with_id(text_id, "data.db")
-            .map_err(|e| format!("Error fetching text: {}", e))?;
-        Ok((text, text_id.to_string()))
-    } else {
-        Err(format!("ID out of range: {}", text_id))
-    }
-}

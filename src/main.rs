@@ -3,8 +3,8 @@ use std::path::Path;
 use std::process::exit;
 use clap::Parser;
 use log::error;
-use rstype::database::fetch_text_with_id;
-use rstype::{load_text_from_database, load_text_from_file, PreparedText};
+use rstype::database::{fetch_text_with_id, load_text_from_database, load_text_from_database_based_on_difficulty, load_text_from_database_with_random_difficulty};
+use rstype::{load_text_from_file, PreparedText};
 
 #[derive(Parser, Debug)]
 struct Arguments {
@@ -19,7 +19,7 @@ struct Arguments {
     id: Option<u32>,
     #[clap(short, long, value_name="N", default_value="2")]
     /// Choose difficulty withing range 1-5
-    difficulty: Option<u8>,
+    difficulty: Option<u32>,
     #[clap(short='H', long, action)]
     /// Show rstype score history
     history: bool
@@ -28,6 +28,7 @@ struct Arguments {
 fn main() {
     let args = Arguments::parse();
     println!("Hello, world!");
+    let database_file = "data.db";
 
     let file_text: PreparedText = if args.version {
         println!("Rstype version 0.1.0");
@@ -37,11 +38,11 @@ fn main() {
     } else if let Some(file_path) = args.file {
         load_text_from_file(file_path)
     } else if let Some(id) = args.id {
-        load_text_from_database(id)
+        load_text_from_database(id, database_file)
     } else if let Some(difficulty) = args.difficulty {
-        todo!("Load from database based on difficulty not implemented yet");
+        load_text_from_database_based_on_difficulty(difficulty, database_file)
     } else {
-        todo!("Load bases on random dificulty not implemented yet")
+        load_text_from_database_with_random_difficulty(database_file)
     }.unwrap_or_else(|e| {
         error!("{}", e);
         exit(1)

@@ -15,3 +15,4 @@ clap = { version = "4.5.20", features = ["derive"] }
 log = "0.4.22"
 sqlite = "0.36.1"
 uuid = { version = "1.11.0", features = ["v4"] }
+rand = "0.9.0-alpha.2"
