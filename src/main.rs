@@ -31,7 +31,6 @@ struct Arguments {
 
 fn main() {
     let args = Arguments::parse();
-    println!("Hello, world!");
 
     // Start the parser
     let prepared_text = resolve_command_line_args(args);
@@ -39,14 +38,7 @@ fn main() {
     let mut app = App::from_prepared_text(prepared_text);
     
     let window = pancurses::initscr();
-    window.addstr("Hello, world!");
-    
-    // curses.wrapper(app.main());
-    
-    
-
-
-    todo!();
+    app.main(&window);
 }
 
 fn resolve_command_line_args(args: Arguments) -> PreparedText {

@@ -1,13 +1,19 @@
+use std::collections::HashMap;
 use std::io::Write;
+use pancurses::{ColorPair, Input};
 use crate::calculations::number_of_lines_to_fit_text_in_window;
-use crate::PreparedText;
+use crate::{timer, PreparedText};
 
-// pub enum Color {
-//     Red,
-//     Black,
-//     Magenta,
-//     Cyan,
-// }
+#[derive(PartialEq, Eq, Hash)]
+enum Color {
+    Green,
+    Red,
+    Blue,
+    Yellow,
+    Cyan,
+    Magenta,
+    Black,
+}
 
 pub struct App {
     text: String,
@@ -28,7 +34,7 @@ pub struct App {
     mistyped_keys: Vec<String>,
 
     // Time at which test started
-    start_time: u64,
+    start_time: f64,
     // Time at which test ended
     end_time: u64,
 
@@ -59,7 +65,7 @@ pub struct App {
     total_chars_typed: usize,
 
     // Color mapping
-    color: Color,
+    color: HashMap<Color, ColorPair>,
 
     stdout: std::io::Stdout,
 }
@@ -89,7 +95,7 @@ impl App {
             first_key_pressed: false,
             key_strokes: vec![],
             mistyped_keys: vec![],
-            start_time: 0,
+            start_time: 0.0,
             end_time: 0,
             token_index: 0,
             mode: 0,
@@ -102,7 +108,7 @@ impl App {
             accuracy: 0.0,
             time_taken: 0,
             total_chars_typed: 0,
-            color: Color::Red,
+            color: HashMap::new(),
             stdout: std::io::stdout(),
         }
     }
@@ -110,8 +116,15 @@ impl App {
     pub fn main(&mut self, win: &pancurses::Window) {
         self.initialize_windows(win);
 
-        while true {
-
+        loop {
+            // let key = keyinput(win);
+            let key = win.getch();
+            
+            if let Some(Input::Character(c)) = key {
+                self.key = c.to_string();
+            } else {
+                self.key = "".to_string();
+            }
         }
     }
 
@@ -139,10 +152,55 @@ impl App {
         pancurses::init_pair(6, pancurses::COLOR_WHITE, pancurses::COLOR_MAGENTA);
         pancurses::init_pair(7, pancurses::COLOR_BLACK, pancurses::COLOR_WHITE);
         
-        pancurses::color
-        enum Color {
-            Green()
+        self.color = {
+            let mut color = HashMap::new();
+            color.insert(Color::Green, ColorPair(1));
+            color.insert(Color::Red, ColorPair(2));
+            color.insert(Color::Blue, ColorPair(3));
+            color.insert(Color::Yellow, ColorPair(4));
+            color.insert(Color::Cyan, ColorPair(5));
+            color.insert(Color::Magenta, ColorPair(6));
+            color.insert(Color::Black, ColorPair(7));
+            color
+        };
+        
+        // This sets input to be a non-blocking call and will block for 100ms
+        // Returns -1 if no input found at the end of time
+        win.nodelay(true);
+        win.timeout(100);
+        
+        self.setup_print(win);
+    }
+    
+    /// Print setup text at beginning of each typing sessions.
+    fn setup_print(&mut self, win: &pancurses::Window) {
+        win.attron(self.color.get(&Color::Cyan).unwrap().0);
+        win.mvaddstr(0, 0, format!("ID:{} ", self.text_id));
+        win.attroff(self.color.get(&Color::Cyan).unwrap().0);
+        win.attron(self.color.get(&Color::Blue).unwrap().0);
+        win.mvaddstr(0, self.window_width / 2 - 5, " MITYPE");
+        
+        // Text is printed BOLD initially
+        // It is dimmed as user types on top of it
+        win.attron(pancurses::A_BOLD);
+        win.mvaddstr(2, 0, &self.text);
+        
+        self.print_realtime_wpm(win);
+        
+        win.mv(2, 0);
+    }
+    
+    fn print_realtime_wpm(&mut self, win: &pancurses::Window) {
+        let mut current_wpm = 0.0;
+        let total_time = timer::get_elapsed_minutes_since_first_keypress(self.start_time);
+        if total_time != 0.0 {
+            let words = self.current_string.split_ascii_whitespace();
+            let word_count = words.count() as f64;
+            current_wpm = word_count / total_time;
         }
+        win.attron(self.color.get(&Color::Cyan).unwrap().0);
+        win.mvaddstr(0, self.window_width - 14, format!("{:.2}", current_wpm));
+        win.addstr(" WPM ");
     }
 
     /// Check if screen size is enough to print text.
@@ -200,3 +258,16 @@ fn word_wrap(text: &str, width: i32) -> String {
 fn get_dimensions(win: &pancurses::Window) -> (i32, i32) {
     win.get_max_yx()
 }
+
+/// Retrieve next character of text input
+/// # Returns
+/// * `String` containing the next character of text input
+fn keyinput(win: &pancurses::Window) -> String {
+    match win.getch() {
+        Some(key) => {
+            "".to_string()
+        }
+        None => "".to_string(),
+    }
+}
+    

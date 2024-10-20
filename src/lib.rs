@@ -3,6 +3,7 @@ use std::path::Path;
 pub mod database;
 pub mod app;
 pub mod calculations;
+pub mod timer;
 
 pub type PreparedText = (String, String);
 
