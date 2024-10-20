@@ -38,6 +38,8 @@ fn main() {
     let mut app = App::from_prepared_text(prepared_text);
     
     let window = pancurses::initscr();
+    pancurses::start_color();
+    window.refresh();
     app.main(&window);
 }
 

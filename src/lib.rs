@@ -4,6 +4,7 @@ pub mod database;
 pub mod app;
 pub mod calculations;
 pub mod timer;
+pub mod history;
 
 pub type PreparedText = (String, String);
 
