@@ -5,6 +5,7 @@ pub mod app;
 pub mod calculations;
 pub mod timer;
 pub mod history;
+pub mod keycheck;
 
 pub type PreparedText = (String, String);
 

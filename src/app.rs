@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 use std::io::Write;
-use std::time::SystemTime;
+use std::time;
+use std::time::{Duration, SystemTime};
 use pancurses::{ColorPair, Input};
 use crate::calculations::{accuracy, first_index_at_which_strings_differ, number_of_lines_to_fit_text_in_window, speed_in_wpm};
 use crate::{history, timer, PreparedText};
 use crate::database::load_text_from_database;
+use crate::keycheck::{is_resize, is_valid_initial_key};
 
 #[derive(PartialEq, Eq, Hash)]
 enum Color {
@@ -32,7 +34,7 @@ pub struct App {
     // First valid key press
     first_key_pressed: bool,
     // Stores keypress, time tuple
-    key_strokes: Vec<(usize, usize)>,
+    key_strokes: Vec<(f64, Input)>,
     mistyped_keys: Vec<usize>,
 
     // Time at which test started
@@ -137,7 +139,7 @@ impl App {
             
             // Test mode
             if self.mode == 0 {
-                self.typing_mode(win, key)
+                self.typing_mode(win, &key)
             }
 
             if let Input::Character(c) = key {
@@ -190,6 +192,43 @@ impl App {
         win.timeout(100);
 
         self.setup_print(win);
+    }
+    
+    /// Start recording typing session progress
+    fn typing_mode(&mut self, win: &pancurses::Window, key: &Input) {
+        // Note start time when first valid key is pressed
+        if !self.first_key_pressed && is_valid_initial_key(key) {
+            self.start_time = SystemTime::now();
+            self.first_key_pressed = true;
+        }
+        
+        if is_resize(key) {
+            self.resize(win);
+        }
+        
+        if !self.first_key_pressed {
+            return
+        }
+        
+        self.key_strokes.append((SystemTime::now()
+                                     .duration_since(time::UNIX_EPOCH)
+                                     .unwrap().as_secs_f64(), key.clone()))
+    }
+    
+    /// Response to window resize events
+    fn resize(&mut self, win: &pancurses::Window) {
+        win.clear();
+        
+        let (window_height, window_width) = get_dimensions(win);
+        self.window_height = window_height;
+        self.window_width = window_width;
+        self.text = word_wrap(&self.text_backup, self.window_width);
+        
+        self.screen_size_check();
+        
+        self.print_realtime_wpm(win);
+        self.setup_print(win);
+        self.update_state(win);
     }
 
     /// Print setup text at beginning of each typing sessions.
@@ -326,9 +365,9 @@ impl App {
             // Find time difference between the key strokes
             // The key_strokes list is storing the time at which the key is pressed
             for index in (0..(self.key_strokes.len() - 1)).rev() {
-                self.key_strokes[index].0 -= self.key_strokes[index - 1].0
+                self.key_strokes[index].0 -= self.key_strokes[index - 1].0.clone();
             }
-            self.key_strokes[0].0 = 0;
+            self.key_strokes[0].0 = Duration::from_secs(0);
         }
 
 
@@ -396,7 +435,7 @@ impl App {
         self.first_key_pressed = false;
         self.key_strokes = vec![];
         self.mistyped_keys = vec![];
-        self.start_time = 0.0;
+        self.start_time = SystemTime::now();
         self.token_index = 0;
         self.current_speed_wpm = 0.0;
         self.total_chars_typed = 0;
