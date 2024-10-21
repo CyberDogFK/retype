@@ -40,3 +40,13 @@ pub fn speed_in_wpm(text: &Vec<String>, start_time: SystemTime) -> f64 {
 pub fn accuracy(total_chars_typed: usize, wrongly_typed: usize) -> f64 {
     ((total_chars_typed - wrongly_typed) as f64 / total_chars_typed as f64) * 100.0
 }
+
+pub fn get_space_count_after_ith_word(index: usize, text: &String) -> usize {
+    let mut count = 0;
+    let mut index = index;
+    while index < text.len() && text.chars().nth(index).unwrap() == ' ' {
+        index += 1;
+        count += 1;
+    }
+    count
+}

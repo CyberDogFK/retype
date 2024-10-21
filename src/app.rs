@@ -3,10 +3,10 @@ use std::io::Write;
 use std::time;
 use std::time::{Duration, SystemTime};
 use pancurses::{ColorPair, Input};
-use crate::calculations::{accuracy, first_index_at_which_strings_differ, number_of_lines_to_fit_text_in_window, speed_in_wpm};
+use crate::calculations::{accuracy, first_index_at_which_strings_differ, get_space_count_after_ith_word, number_of_lines_to_fit_text_in_window, speed_in_wpm};
 use crate::{history, timer, PreparedText};
 use crate::database::load_text_from_database;
-use crate::keycheck::{is_resize, is_valid_initial_key};
+use crate::keycheck::{get_key_mapping, is_backspace, is_ctrl_backspace, is_ctrl_c, is_escape, is_resize, is_valid_initial_key};
 
 #[derive(PartialEq, Eq, Hash)]
 enum Color {
@@ -210,9 +210,87 @@ impl App {
             return
         }
         
-        self.key_strokes.append((SystemTime::now()
+        self.key_strokes.push((SystemTime::now()
                                      .duration_since(time::UNIX_EPOCH)
-                                     .unwrap().as_secs_f64(), key.clone()))
+                                     .unwrap().as_secs_f64(),
+                                 *key));
+        
+        self.print_realtime_wpm(win);
+        
+        self.key_printer(win, key);
+    }
+    
+    /// Print required key to terminal
+    fn key_printer(&mut self, win: &pancurses::Window, key: &pancurses::Input) {
+        // reset test
+        if is_escape(key) {
+            self.reset_test()
+        } else if is_ctrl_c(key) {
+            pancurses::endwin();
+            std::process::exit(0);
+        } else if is_resize(key) {
+            self.resize(win);
+        } else if is_backspace(key) {
+            self.erase_key();
+        } else if is_ctrl_backspace(key) {
+            self.erase_word();
+        } // Ignore spaces at the start of the word (Plover support)
+        else if key == &Input::Character(' ') && self.current_word.len() < self.current_word_limit {
+            self.total_chars_typed += 1;
+            if self.current_word != "" {
+                self.check_word()
+            }
+        } else if is_valid_initial_key(key){
+            let key = get_key_mapping(key);
+            self.appendkey(&key);
+            self.total_chars_typed += 1;
+        }
+        self.update_state(win)
+    }
+    
+    fn appendkey(&mut self, key: &String) {
+        if self.current_word.len() < self.current_word_limit {
+            self.current_word += key;
+            self.current_string += key;
+        }
+    }
+    
+    /// Accept finalized word
+    fn check_word(&mut self) {
+        let spc = get_space_count_after_ith_word(self.current_string.len(), &self.text);
+        if self.current_word == self.tokens[self.token_index] {
+            self.token_index += 1;
+            self.current_word = "".to_string();
+            self.current_string += " ".repeat(spc).as_str();
+        } else {
+            self.current_word = format!("{} ", self.current_word);
+            self.current_string = format!("{} ", self.current_string);
+        }
+    }
+    
+    /// Erase the last typed word
+    fn erase_word(&mut self) {
+        if self.current_word.len() > 0 {
+            let index_word = self.current_word.rfind(" ").unwrap();
+            if index_word as i32 == -1 {
+                // Single word
+                let word_length = self.current_word.len();
+                self.current_string = self.current_string[0..self.current_string.len() - word_length].to_string();
+                self.current_word = "".to_string();
+            } else {
+                let diff = self.current_word.len() - index_word;
+                self.current_word = self.current_word[0..self.current_word.len() - diff].to_string();
+                self.current_string = self.current_string[0..self.current_string.len() - diff].to_string();
+            }
+        }
+    }
+    
+    /// Erase the last typed character
+    fn erase_key(&mut self) {
+        if self.current_string.len() > 0 {
+            self.current_word.pop();
+            self.current_string.pop();
+        }
     }
     
     /// Response to window resize events
@@ -367,7 +445,7 @@ impl App {
             for index in (0..(self.key_strokes.len() - 1)).rev() {
                 self.key_strokes[index].0 -= self.key_strokes[index - 1].0.clone();
             }
-            self.key_strokes[0].0 = Duration::from_secs(0);
+            self.key_strokes[0].0 = Duration::from_secs(0).as_secs_f64();
         }
 
 
