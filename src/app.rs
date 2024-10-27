@@ -3,7 +3,7 @@ use std::io::Write;
 use std::time;
 use std::time::{Duration, SystemTime};
 use pancurses::{ColorPair, Input};
-use crate::calculations::{accuracy, first_index_at_which_strings_differ, get_space_count_after_ith_word, number_of_lines_to_fit_text_in_window, speed_in_wpm};
+use crate::calculations::{accuracy, first_index_at_which_strings_differ, get_space_count_after_ith_word, number_of_lines_to_fit_text_in_window, speed_in_wpm, word_wrap};
 use crate::{history, timer, PreparedText};
 use crate::database::load_text_from_database;
 use crate::keycheck::{get_key_mapping, is_backspace, is_ctrl_backspace, is_ctrl_c, is_ctrl_t, is_enter, is_escape, is_resize, is_tab, is_valid_initial_key};
@@ -143,6 +143,7 @@ impl App {
                     }
                 }
 
+                // todo: Seems this part is not working now
                 // Test mode
                 if self.mode == 0 {
                     // TODO: something wrong with typing mode
@@ -555,38 +556,6 @@ impl App {
     }
 }
 
-/// Wrap text on the screen according to the window width.
-///
-/// Returns text with extra spaces which makes the string word wrap.
-fn word_wrap(text: &str, width: i32) -> String {
-    // For the end of each line, move backwards until you find a space.
-    // When you do, append those many spaces after the single space.
-    let mut text = text.to_string();
-    for line in (1..=number_of_lines_to_fit_text_in_window(&text, width) + 1) {
-        // Current line fits in the window
-        if line * width >= text.len() as i32 {
-            continue;
-        }
-
-        // Last cell of that line
-        let mut index: usize = (line * width - 1) as usize;
-
-        // Continue if already a space
-        if text.chars().nth(index).unwrap() == ' ' {
-            continue;
-        }
-
-        index = text[0..index].rfind(' ').unwrap();
-
-        let space_count = line * width - index as i32;
-        let space_string = " ".repeat(space_count as usize);
-
-        let first = text[0..index].to_string();
-        let third = text[index + 1..text.len()].to_string();
-        text = format!("{}{}{}", first, space_string, third);
-    }
-    text
-}
 
 /// Get the height and width of terminal
 ///

@@ -1,9 +1,6 @@
 /// Detect ESC key
 pub fn is_escape(key: &pancurses::Input) -> bool {
-    match key {
-        pancurses::Input::Character(c) => *c == 27 as char,
-        _ => false
-    }
+    matches!(key, pancurses::Input::KeyExit)
 }
 
 pub fn is_ctrl_c(key_values: &pancurses::Input) -> bool {
@@ -47,6 +44,7 @@ pub fn is_resize(key: &pancurses::Input) -> bool {
 pub fn is_backspace(key: &pancurses::Input) -> bool {
     match key {
         pancurses::Input::KeyBackspace => true,
+        pancurses::Input::Character(c) => *c == '\x7f',
         _ => false
     }
 }
