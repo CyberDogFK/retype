@@ -6,7 +6,7 @@ use pancurses::{ColorPair, Input};
 use crate::calculations::{accuracy, first_index_at_which_strings_differ, get_space_count_after_ith_word, number_of_lines_to_fit_text_in_window, speed_in_wpm};
 use crate::{history, timer, PreparedText};
 use crate::database::load_text_from_database;
-use crate::keycheck::{get_key_mapping, is_backspace, is_ctrl_backspace, is_ctrl_c, is_escape, is_resize, is_valid_initial_key};
+use crate::keycheck::{get_key_mapping, is_backspace, is_ctrl_backspace, is_ctrl_c, is_ctrl_t, is_enter, is_escape, is_resize, is_tab, is_valid_initial_key};
 
 #[derive(PartialEq, Eq, Hash)]
 enum Color {
@@ -119,34 +119,57 @@ impl App {
 
     pub fn main(&mut self, win: &pancurses::Window) {
         self.initialize_windows(win);
+        win.nodelay(false);
+        win.keypad(true);
 
         loop {
             // let key = keyinput(win);
-            let key = win.getch().unwrap_or(Input::Character(' '));
+            let key = win.getch();
 
-            if !self.first_key_pressed {
-                if key == Input::Character(27 as char) {
-                    pancurses::endwin();
-                    std::process::exit(0);
+            if let Some(key) = key {
+                if !self.first_key_pressed {
+                    match key {
+                        Input::Character('\u{1b}') => {
+                            pancurses::endwin();
+                            std::process::exit(0);
+                        }
+                        Input::KeyLeft => {
+                            self.switch_text(win, -1)
+                        }
+                        Input::KeyRight => {
+                            self.switch_text(win, 1)
+                        }
+                        _ => {}
+                    }
                 }
-                if key == Input::KeyLeft {
-                    self.switch_text(win, -1)
+
+                // Test mode
+                if self.mode == 0 {
+                    // TODO: something wrong with typing mode
+                    self.typing_mode(win, &key)
+                } else {
+                    // Again mode
+                    // Tab to retry last test
+                    if is_tab(&key) {
+                        win.clear();
+                        self.reset_test();
+                        self.setup_print(win);
+                        self.update_state(win);
+                    }
+
+                    // Replay
+                    if is_enter(&key) {
+                        self.replay(win)
+                    }
+
+                    // Tweet result
+                    if is_ctrl_t(&key) {
+                        self.share_result()
+                    }
                 }
-                if key == Input::KeyRight {
-                    self.switch_text(win, 1)
-                }
-            }
-            
-            // Test mode
-            if self.mode == 0 {
-                self.typing_mode(win, &key)
             }
 
-            if let Input::Character(c) = key {
-                self.key = c.to_string();
-            } else {
-                self.key = "".to_string();
-            }
+            win.refresh();
         }
     }
 
@@ -193,7 +216,7 @@ impl App {
 
         self.setup_print(win);
     }
-    
+
     /// Start recording typing session progress
     fn typing_mode(&mut self, win: &pancurses::Window, key: &Input) {
         // Note start time when first valid key is pressed
@@ -201,25 +224,25 @@ impl App {
             self.start_time = SystemTime::now();
             self.first_key_pressed = true;
         }
-        
+
         if is_resize(key) {
             self.resize(win);
         }
-        
+
         if !self.first_key_pressed {
-            return
+            return;
         }
-        
+
         self.key_strokes.push((SystemTime::now()
-                                     .duration_since(time::UNIX_EPOCH)
-                                     .unwrap().as_secs_f64(),
-                                 *key));
-        
+                                   .duration_since(time::UNIX_EPOCH)
+                                   .unwrap().as_secs_f64(),
+                               *key));
+
         self.print_realtime_wpm(win);
-        
+
         self.key_printer(win, key);
     }
-    
+
     /// Print required key to terminal
     fn key_printer(&mut self, win: &pancurses::Window, key: &pancurses::Input) {
         // reset test
@@ -240,21 +263,21 @@ impl App {
             if self.current_word != "" {
                 self.check_word()
             }
-        } else if is_valid_initial_key(key){
+        } else if is_valid_initial_key(key) {
             let key = get_key_mapping(key);
             self.appendkey(&key);
             self.total_chars_typed += 1;
         }
         self.update_state(win)
     }
-    
+
     fn appendkey(&mut self, key: &String) {
         if self.current_word.len() < self.current_word_limit {
             self.current_word += key;
             self.current_string += key;
         }
     }
-    
+
     /// Accept finalized word
     fn check_word(&mut self) {
         let spc = get_space_count_after_ith_word(self.current_string.len(), &self.text);
@@ -267,7 +290,11 @@ impl App {
             self.current_string = format!("{} ", self.current_string);
         }
     }
-    
+
+    fn share_result(&mut self) {
+        todo!("SHARE RESULT NOT IMPLEMENTED YET");
+    }
+
     /// Erase the last typed word
     fn erase_word(&mut self) {
         if self.current_word.len() > 0 {
@@ -284,7 +311,7 @@ impl App {
             }
         }
     }
-    
+
     /// Erase the last typed character
     fn erase_key(&mut self) {
         if self.current_string.len() > 0 {
@@ -292,18 +319,18 @@ impl App {
             self.current_string.pop();
         }
     }
-    
+
     /// Response to window resize events
     fn resize(&mut self, win: &pancurses::Window) {
         win.clear();
-        
+
         let (window_height, window_width) = get_dimensions(win);
         self.window_height = window_height;
         self.window_width = window_width;
         self.text = word_wrap(&self.text_backup, self.window_width);
-        
+
         self.screen_size_check();
-        
+
         self.print_realtime_wpm(win);
         self.setup_print(win);
         self.update_state(win);
@@ -372,6 +399,10 @@ impl App {
         self.update_state(win);
     }
 
+    fn replay(&mut self, win: &pancurses::Window) {
+        todo!("REPLAY NOT IMPLEMENTED YET");
+    }
+
     /// Report on typing session results
     fn update_state(&mut self, win: &pancurses::Window) {
         self.clear_line(win, self.number_of_lines_to_print_text);
@@ -404,7 +435,7 @@ impl App {
         win.mvaddstr(
             (2 + index as i32 / self.window_width),
             index as i32 % self.window_width,
-            &self.text[index..=index]
+            &self.text[index..=index],
         );
 
         // End of test, all characters are typed out
@@ -425,7 +456,7 @@ impl App {
             win.mvaddstr(
                 (2 + *i as i32 / self.window_width),
                 *i as i32 % self.window_width,
-                &self.text[*i..=*i]
+                &self.text[*i..=*i],
             );
         }
 
@@ -477,7 +508,7 @@ impl App {
         self.current_string = "".to_string();
         self.current_word = "".to_string();
         self.token_index = 0;
-        
+
         self.start_time = SystemTime::now();
         if !self.test_complete {
             win.refresh();
@@ -534,7 +565,7 @@ fn word_wrap(text: &str, width: i32) -> String {
     for line in (1..=number_of_lines_to_fit_text_in_window(&text, width) + 1) {
         // Current line fits in the window
         if line * width >= text.len() as i32 {
-            continue
+            continue;
         }
 
         // Last cell of that line
@@ -542,7 +573,7 @@ fn word_wrap(text: &str, width: i32) -> String {
 
         // Continue if already a space
         if text.chars().nth(index).unwrap() == ' ' {
-            continue
+            continue;
         }
 
         index = text[0..index].rfind(' ').unwrap();

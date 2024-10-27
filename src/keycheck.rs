@@ -21,12 +21,27 @@ pub fn is_valid_initial_key(key: &pancurses::Input) -> bool {
     }
 }
 
-/// Detect if terminal was resized
-pub fn is_resize(key: &pancurses::Input) -> bool {
+pub fn is_ctrl_t(key: &pancurses::Input) -> bool {
     match key {
-        pancurses::Input::KeyResize => true,
+        pancurses::Input::Character(c) => *c == '\x14',
         _ => false
     }
+}
+
+pub fn is_enter(key: &pancurses::Input) -> bool {
+    matches!(key, pancurses::Input::KeyEnter)
+}
+
+pub fn is_tab(key: &pancurses::Input) -> bool {
+    match key {
+        pancurses::Input::Character(c) => *c == '\t',
+        _ => false
+    }
+}
+
+/// Detect if terminal was resized
+pub fn is_resize(key: &pancurses::Input) -> bool {
+    matches!(key, pancurses::Input::KeyResize)
 }
 
 pub fn is_backspace(key: &pancurses::Input) -> bool {
