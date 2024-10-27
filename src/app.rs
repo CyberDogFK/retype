@@ -261,7 +261,7 @@ impl App {
         } // Ignore spaces at the start of the word (Plover support)
         else if key == &Input::Character(' ') && self.current_word.len() < self.current_word_limit {
             self.total_chars_typed += 1;
-            if self.current_word != "" {
+            if !self.current_word.is_empty() {
                 self.check_word()
             }
         } else if is_valid_initial_key(key) {
@@ -410,7 +410,7 @@ impl App {
         self.clear_line(win, self.number_of_lines_to_print_text + 2);
         self.clear_line(win, self.number_of_lines_to_print_text + 4);
 
-        // Highlight in RED if word reaches the word limit length
+        // Highlight in RED if a word reaches the word limit length
         if self.current_word.len() >= self.current_word_limit {
             win.attrset(*self.color.get(&Color::Red).unwrap());
             win.mvaddstr(self.number_of_lines_to_print_text, 0, &self.current_word);

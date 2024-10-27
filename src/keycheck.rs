@@ -12,10 +12,7 @@ pub fn is_ctrl_c(key_values: &pancurses::Input) -> bool {
 
 /// Detect if the pressed key is a valid key to start timer
 pub fn is_valid_initial_key(key: &pancurses::Input) -> bool { 
-    match key {
-        pancurses::Input::Character(c) => c.is_alphabetic(),
-        _ => false
-    }
+    matches!(key, pancurses::Input::Character(_))
 }
 
 pub fn is_ctrl_t(key: &pancurses::Input) -> bool {
