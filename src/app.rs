@@ -454,13 +454,12 @@ impl App {
             // Find time difference between the key strokes
             // The key_strokes list is storing the time at which the key is pressed
             for index in (1..(self.key_strokes.len() - 1)).rev() {
-                // dbg!("index: {}", index);
                 self.key_strokes[index].0 -= self.key_strokes[index - 1].0;
             }
             self.key_strokes[0].0 = Duration::from_secs(0).as_secs_f64();
         }
 
-
+        win.attrset(pancurses::A_NORMAL);
         win.mvaddstr(self.number_of_lines_to_print_text, 0, " Your typing speed is ");
         win.attrset(*self.color.get(&Color::Magenta).unwrap());
         win.addstr(format!(" {:.2} ", self.current_speed_wpm));
@@ -469,17 +468,22 @@ impl App {
 
         win.attrset(*self.color.get(&Color::Black).unwrap());
         win.mvaddstr(self.number_of_lines_to_print_text + 2, 1, " Enter ");
-        win.attroff(*self.color.get(&Color::Black).unwrap());
+        win.attrset(pancurses::A_NORMAL);
         win.addstr(" to see replay, ");
 
         win.attrset(*self.color.get(&Color::Black).unwrap());
+        win.addstr(" Tab ");
+        win.attrset(pancurses::A_NORMAL);
+        win.addstr(" to retry.");
+
+        win.attrset(*self.color.get(&Color::Black).unwrap());
         win.mvaddstr(self.number_of_lines_to_print_text + 3, 1, " Arrow keys");
-        win.attroff(*self.color.get(&Color::Black).unwrap());
+        win.attrset(pancurses::A_NORMAL);
         win.addstr(" to change text ");
 
         win.attrset(*self.color.get(&Color::Black).unwrap());
         win.mvaddstr(self.number_of_lines_to_print_text + 4, 1, " CTRL+T ");
-        win.attroff(*self.color.get(&Color::Black).unwrap());
+        win.attrset(pancurses::A_NORMAL);
         win.addstr(" to tweet result.");
 
         self.print_stats(win);
