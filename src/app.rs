@@ -298,7 +298,7 @@ impl App {
 
     /// Erase the last typed word
     fn erase_word(&mut self) {
-        if self.current_word.len() > 0 {
+        if !self.current_word.is_empty() {
             let index_word = self.current_word.rfind(" ").unwrap();
             if index_word as i32 == -1 {
                 // Single word
@@ -315,7 +315,7 @@ impl App {
 
     /// Erase the last typed character
     fn erase_key(&mut self) {
-        if self.current_string.len() > 0 {
+        if !self.current_word.is_empty() {
             self.current_word.pop();
             self.current_string.pop();
         }
@@ -380,25 +380,6 @@ impl App {
         }
     }
 
-    /// Load next of previous text snippet from database.
-    fn switch_text(&mut self, win: &pancurses::Window, direction: i32) {
-        win.clear();
-
-        let text_id = self.text_id.parse::<i32>().unwrap() + direction;
-        self.text_id = text_id.to_string();
-        self.text = load_text_from_database(text_id as u32, "data.db").unwrap().0;
-        self.tokens = self.text.split_ascii_whitespace()
-            .map(|s| s.to_string())
-            .collect();
-        self.text = self.tokens.join(" ");
-        self.text_backup = self.text.clone();
-
-        self.text = word_wrap(&self.text, self.window_width);
-
-        self.reset_test();
-        self.setup_print(win);
-        self.update_state(win);
-    }
 
     fn replay(&mut self, win: &pancurses::Window) {
         todo!("REPLAY NOT IMPLEMENTED YET");
@@ -415,7 +396,7 @@ impl App {
             win.attrset(*self.color.get(&Color::Red).unwrap());
             win.mvaddstr(self.number_of_lines_to_print_text, 0, &self.current_word);
         } else {
-            win.attroff(*self.color.get(&Color::Red).unwrap());
+            // win.attroff(*self.color.get(&Color::Red).unwrap());
             win.mvaddstr(self.number_of_lines_to_print_text, 0, &self.current_word);
         }
 
@@ -424,7 +405,7 @@ impl App {
         win.attrset(pancurses::A_BOLD);
         win.mvaddstr(2, 0, &self.text);
         win.attrset(pancurses::A_DIM);
-        win.mvaddstr(2, 0, &self.text[0..=self.current_string.len()]);
+        win.mvaddstr(2, 0, &self.text[0..=self.current_string.len() - 1]);
 
         let index = first_index_at_which_strings_differ(&self.current_string, &self.text);
         // Check if difference was found
@@ -434,9 +415,9 @@ impl App {
 
         win.attrset(*self.color.get(&Color::Red).unwrap());
         win.mvaddstr(
-            (2 + index as i32 / self.window_width),
+            2 + index as i32 / self.window_width,
             index as i32 % self.window_width,
-            &self.text[index..=index],
+            &self.text[index..=self.current_string.len() - 1],
         );
 
         // End of test, all characters are typed out
@@ -553,6 +534,26 @@ impl App {
         self.time_taken = 0;
         self.test_complete = false;
         pancurses::curs_set(1);
+    }
+
+    /// Load next of previous text snippet from database.
+    fn switch_text(&mut self, win: &pancurses::Window, direction: i32) {
+        win.clear();
+
+        let text_id = self.text_id.parse::<i32>().unwrap() + direction;
+        self.text_id = text_id.to_string();
+        self.text = load_text_from_database(text_id as u32, "data.db").unwrap().0;
+        self.tokens = self.text.split_ascii_whitespace()
+            .map(|s| s.to_string())
+            .collect();
+        self.text = self.tokens.join(" ");
+        self.text_backup = self.text.clone();
+
+        self.text = word_wrap(&self.text, self.window_width);
+
+        self.reset_test();
+        self.setup_print(win);
+        self.update_state(win);
     }
 }
 
