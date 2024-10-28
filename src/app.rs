@@ -1,12 +1,17 @@
+use crate::calculations::{
+    accuracy, first_index_at_which_strings_differ, get_space_count_after_ith_word,
+    number_of_lines_to_fit_text_in_window, speed_in_wpm, word_wrap,
+};
+use crate::database::load_text_from_database;
+use crate::keycheck::{
+    get_key_mapping, is_backspace, is_ctrl_backspace, is_ctrl_c, is_ctrl_t, is_enter, is_escape,
+    is_resize, is_tab, is_valid_initial_key,
+};
+use crate::{history, timer, PreparedText};
+use pancurses::{ColorPair, Input};
 use std::collections::HashMap;
-use std::io::Write;
 use std::time;
 use std::time::{Duration, SystemTime};
-use pancurses::{ColorPair, Input};
-use crate::calculations::{accuracy, first_index_at_which_strings_differ, get_space_count_after_ith_word, number_of_lines_to_fit_text_in_window, speed_in_wpm, word_wrap};
-use crate::{history, timer, PreparedText};
-use crate::database::load_text_from_database;
-use crate::keycheck::{get_key_mapping, is_backspace, is_ctrl_backspace, is_ctrl_c, is_ctrl_t, is_enter, is_escape, is_resize, is_tab, is_valid_initial_key};
 
 #[derive(PartialEq, Eq, Hash)]
 enum Color {
@@ -77,16 +82,14 @@ pub struct App {
 impl App {
     pub fn from_prepared_text(prepared_text: PreparedText) -> Self {
         let (text, text_id) = prepared_text;
-        let tokens: Vec<String> = text.split_ascii_whitespace()
+        let tokens: Vec<String> = text
+            .split_ascii_whitespace()
             .map(|s| s.to_string())
             .collect();
 
         let text = tokens.join(" ");
         let text_backup = text.clone();
-        let current_word_limit = tokens.iter()
-            .map(|s| s.len())
-            .max()
-            .unwrap_or(0) + 5;
+        let current_word_limit = tokens.iter().map(|s| s.len()).max().unwrap_or(0) + 5;
 
         Self {
             text,
@@ -123,7 +126,6 @@ impl App {
         win.keypad(true);
 
         loop {
-            // let key = keyinput(win);
             let key = win.getch();
 
             if let Some(key) = key {
@@ -133,12 +135,8 @@ impl App {
                             pancurses::endwin();
                             std::process::exit(0);
                         }
-                        Input::KeyLeft => {
-                            self.switch_text(win, -1)
-                        }
-                        Input::KeyRight => {
-                            self.switch_text(win, 1)
-                        }
+                        Input::KeyLeft => self.switch_text(win, -1),
+                        Input::KeyRight => self.switch_text(win, 1),
                         _ => {}
                     }
                 }
@@ -232,10 +230,13 @@ impl App {
             return;
         }
 
-        self.key_strokes.push((SystemTime::now()
-                                   .duration_since(time::UNIX_EPOCH)
-                                   .unwrap().as_secs_f64(),
-                               *key));
+        self.key_strokes.push((
+            SystemTime::now()
+                .duration_since(time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs_f64(),
+            *key,
+        ));
 
         self.print_realtime_wpm(win);
 
@@ -243,7 +244,7 @@ impl App {
     }
 
     /// Print required key to terminal
-    fn key_printer(&mut self, win: &pancurses::Window, key: &pancurses::Input) {
+    fn key_printer(&mut self, win: &pancurses::Window, key: &Input) {
         // reset test
         if is_escape(key) {
             self.reset_test()
@@ -256,8 +257,10 @@ impl App {
             self.erase_key();
         } else if is_ctrl_backspace(key) {
             self.erase_word();
-        } // Ignore spaces at the start of the word (Plover support)
-        else if key == &Input::Character(' ') && self.current_word.len() < self.current_word_limit {
+        }
+        // Ignore spaces at the start of the word (Plover support)
+        else if key == &Input::Character(' ') && self.current_word.len() < self.current_word_limit
+        {
             self.total_chars_typed += 1;
             if !self.current_word.is_empty() {
                 self.check_word()
@@ -301,12 +304,15 @@ impl App {
             if index_word as i32 == -1 {
                 // Single word
                 let word_length = self.current_word.len();
-                self.current_string = self.current_string[0..self.current_string.len() - word_length].to_string();
+                self.current_string =
+                    self.current_string[0..self.current_string.len() - word_length].to_string();
                 self.current_word = "".to_string();
             } else {
                 let diff = self.current_word.len() - index_word;
-                self.current_word = self.current_word[0..self.current_word.len() - diff].to_string();
-                self.current_string = self.current_string[0..self.current_string.len() - diff].to_string();
+                self.current_word =
+                    self.current_word[0..self.current_word.len() - diff].to_string();
+                self.current_string =
+                    self.current_string[0..self.current_string.len() - diff].to_string();
             }
         }
     }
@@ -372,12 +378,10 @@ impl App {
             number_of_lines_to_fit_text_in_window(&self.text, self.window_width) + 3;
         if self.number_of_lines_to_print_text + 7 >= self.window_height {
             pancurses::endwin();
-            std::io::stdout().write_all(b"Window too small to print given text").unwrap();
-            // writeln!(stdout(), "Window too small to print given text").unwrap();
+            eprintln!("Window too small to print given text");
             std::process::exit(1);
         }
     }
-
 
     fn replay(&mut self, win: &pancurses::Window) {
         todo!("REPLAY NOT IMPLEMENTED YET");
@@ -439,9 +443,9 @@ impl App {
                 &self.text[*i..=*i],
             );
         }
-        
+
         pancurses::curs_set(0);
-        
+
         // Calculate stats at the end of the test
         if self.mode == 0 {
             self.current_speed_wpm = speed_in_wpm(&self.tokens, self.start_time);
@@ -449,7 +453,7 @@ impl App {
             let wrongly_typed_chars = self.total_chars_typed - total_chars_in_text;
             self.accuracy = accuracy(self.total_chars_typed, wrongly_typed_chars);
             self.time_taken = timer::get_elapsed_minutes_since_first_keypress(self.start_time);
-        
+
             self.mode = 1;
             // Find time difference between the key strokes
             // The key_strokes list is storing the time at which the key is pressed
@@ -458,46 +462,54 @@ impl App {
             }
             self.key_strokes[0].0 = Duration::from_secs(0).as_secs_f64();
         }
-        
+
         win.attrset(pancurses::A_NORMAL);
-        win.mvaddstr(self.number_of_lines_to_print_text, 0, " Your typing speed is ");
+        win.mvaddstr(
+            self.number_of_lines_to_print_text,
+            0,
+            " Your typing speed is ",
+        );
         win.attrset(*self.color.get(&Color::Magenta).unwrap());
         win.addstr(format!(" {:.2} ", self.current_speed_wpm));
         win.attroff(*self.color.get(&Color::Magenta).unwrap());
         win.addstr(" WPM ");
-        
+
         win.attrset(*self.color.get(&Color::Black).unwrap());
         win.mvaddstr(self.number_of_lines_to_print_text + 2, 1, " Enter ");
         win.attrset(pancurses::A_NORMAL);
         win.addstr(" to see replay, ");
-        
+
         win.attrset(*self.color.get(&Color::Black).unwrap());
         win.addstr(" Tab ");
         win.attrset(pancurses::A_NORMAL);
         win.addstr(" to retry.");
-        
+
         win.attrset(*self.color.get(&Color::Black).unwrap());
         win.mvaddstr(self.number_of_lines_to_print_text + 3, 1, " Arrow keys ");
         win.attrset(pancurses::A_NORMAL);
         win.addstr(" to change text.");
-        
+
         win.attrset(*self.color.get(&Color::Black).unwrap());
         win.mvaddstr(self.number_of_lines_to_print_text + 4, 1, " CTRL+T ");
         win.attrset(pancurses::A_NORMAL);
         win.addstr(" to tweet result.");
-        
+
         self.print_stats(win);
-        
+
         self.first_key_pressed = false;
         self.end_time = SystemTime::now();
         self.current_string = "".to_string();
         self.current_word = "".to_string();
         self.token_index = 0;
-        
+
         self.start_time = SystemTime::now();
         if !self.test_complete {
             win.refresh();
-            history::save_history(&self.text_id, self.current_speed_wpm, &format!("{:.2}", self.accuracy));
+            history::save_history(
+                &self.text_id,
+                self.current_speed_wpm,
+                &format!("{:.2}", self.accuracy),
+            );
             self.test_complete = true;
         }
     }
@@ -506,8 +518,11 @@ impl App {
     fn print_stats(&mut self, win: &pancurses::Window) {
         win.attrset(*self.color.get(&Color::Magenta).unwrap());
         // todo: check if is should descent 2 or 1, now works with 2, but maybe it's because of "not implemented" print
-        win.mvaddstr(self.window_height - 2, 0,
-                     format!(" WPM: {:.2} ", self.current_speed_wpm));
+        win.mvaddstr(
+            self.window_height - 2,
+            0,
+            format!(" WPM: {:.2} ", self.current_speed_wpm),
+        );
 
         win.attrset(*self.color.get(&Color::Green).unwrap());
         win.addstr(format!(" Time: {:.2}s ", self.time_taken * 60.0));
@@ -546,8 +561,12 @@ impl App {
 
         let text_id = self.text_id.parse::<i32>().unwrap() + direction;
         self.text_id = text_id.to_string();
-        self.text = load_text_from_database(text_id as u32, "data.db").unwrap().0;
-        self.tokens = self.text.split_ascii_whitespace()
+        self.text = load_text_from_database(text_id as u32, "data.db")
+            .unwrap()
+            .0;
+        self.tokens = self
+            .text
+            .split_ascii_whitespace()
             .map(|s| s.to_string())
             .collect();
         self.text = self.tokens.join(" ");
@@ -561,7 +580,6 @@ impl App {
     }
 }
 
-
 /// Get the height and width of terminal
 ///
 /// # Arguments
@@ -570,17 +588,4 @@ impl App {
 /// * `(i32, i32)` containing the height and width of the terminal
 fn get_dimensions(win: &pancurses::Window) -> (i32, i32) {
     win.get_max_yx()
-}
-
-/// Retrieve next character of text input
-/// # Returns
-/// * `String` containing the next character of text input
-fn keyinput(win: &pancurses::Window) -> String {
-    match win.getch() {
-        Some(Input::Character(key)) => {
-            "".to_string()
-        }
-        None => "".to_string(),
-        _ => "".to_string(),
-    }
 }
