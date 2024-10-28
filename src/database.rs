@@ -52,17 +52,12 @@ pub fn load_text_from_database_based_on_difficulty(difficulty: u32, database_pat
 /// * `Result<String>` - The text corresponding to the ID.
 pub fn fetch_text_with_id(serial_id: u32, database_path: &str) -> Result<String, sqlite::Error> {
     let conn = sqlite::open(database_path)?;
-        // .map_err(|e| format!("Error opening database: {}", e))?;
 
     let query = "SELECT txt FROM data WHERE id = ?";
 
     let mut statement = conn.prepare(query)?;
-        // .map_err(|e| format!("Error preparing query: {}", e))?;
     statement.bind((1, serial_id as i64))?;
-        // .map_err(|e| format!("Error binding parameter: {}", e))?;
     statement.next()?;
-        // .map_err(|e| format!("Error executing query: {}", e))?;
     let txt = statement.read("txt")?;
-        // .map_err(|e| format!("Error reading result: {}", e))?;
     Ok(txt)
 }

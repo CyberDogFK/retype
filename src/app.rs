@@ -463,7 +463,7 @@ impl App {
 
         win.mvaddstr(self.number_of_lines_to_print_text, 0, " Your typing speed is ");
         win.attrset(*self.color.get(&Color::Magenta).unwrap());
-        win.addstr(format!(" {} ", self.current_speed_wpm));
+        win.addstr(format!(" {:.2} ", self.current_speed_wpm));
         win.attroff(*self.color.get(&Color::Magenta).unwrap());
         win.addstr(" WPM ");
 

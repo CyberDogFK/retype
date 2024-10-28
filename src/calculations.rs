@@ -34,7 +34,6 @@ pub fn number_of_lines_to_fit_text_in_window(string: &str, window_width: i32) ->
 /// * `f64` Speed in words per minute
 pub fn speed_in_wpm(text: &Vec<String>, start_time: SystemTime) -> f64 {
     let time_taken = timer::get_elapsed_minutes_since_first_keypress(start_time);
-    // format!("{:.2}", wpm)
     text.len() as f64 / time_taken
 }
 
