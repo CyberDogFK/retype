@@ -143,10 +143,8 @@ impl App {
                     }
                 }
 
-                // todo: Seems this part is not working now
                 // Test mode
                 if self.mode == 0 {
-                    // TODO: something wrong with typing mode
                     self.typing_mode(win, &key)
                 } else {
                     // Again mode
@@ -405,7 +403,7 @@ impl App {
         win.attrset(pancurses::A_BOLD);
         win.mvaddstr(2, 0, &self.text);
         win.attrset(pancurses::A_DIM);
-        win.mvaddstr(2, 0, &self.text[0..=self.current_string.len() - 1]);
+        win.mvaddstr(2, 0, &self.text[0..self.current_string.len()]);
 
         let index = first_index_at_which_strings_differ(&self.current_string, &self.text);
         // Check if difference was found
@@ -417,7 +415,7 @@ impl App {
         win.mvaddstr(
             2 + index as i32 / self.window_width,
             index as i32 % self.window_width,
-            &self.text[index..=self.current_string.len() - 1],
+            &self.text[index..self.current_string.len()],
         );
 
         // End of test, all characters are typed out
@@ -455,8 +453,9 @@ impl App {
             self.mode = 1;
             // Find time difference between the key strokes
             // The key_strokes list is storing the time at which the key is pressed
-            for index in (0..(self.key_strokes.len() - 1)).rev() {
-                self.key_strokes[index].0 -= self.key_strokes[index - 1].0.clone();
+            for index in (1..(self.key_strokes.len() - 1)).rev() {
+                // dbg!("index: {}", index);
+                self.key_strokes[index].0 -= self.key_strokes[index - 1].0;
             }
             self.key_strokes[0].0 = Duration::from_secs(0).as_secs_f64();
         }
