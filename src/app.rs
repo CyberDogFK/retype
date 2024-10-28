@@ -434,14 +434,14 @@ impl App {
         for i in self.mistyped_keys.iter() {
             win.attrset(*self.color.get(&Color::Red).unwrap());
             win.mvaddstr(
-                (2 + *i as i32 / self.window_width),
+                2 + *i as i32 / self.window_width,
                 *i as i32 % self.window_width,
                 &self.text[*i..=*i],
             );
         }
-
+        
         pancurses::curs_set(0);
-
+        
         // Calculate stats at the end of the test
         if self.mode == 0 {
             self.current_speed_wpm = speed_in_wpm(&self.tokens, self.start_time);
@@ -449,7 +449,7 @@ impl App {
             let wrongly_typed_chars = self.total_chars_typed - total_chars_in_text;
             self.accuracy = accuracy(self.total_chars_typed, wrongly_typed_chars);
             self.time_taken = timer::get_elapsed_minutes_since_first_keypress(self.start_time);
-
+        
             self.mode = 1;
             // Find time difference between the key strokes
             // The key_strokes list is storing the time at which the key is pressed
@@ -458,42 +458,42 @@ impl App {
             }
             self.key_strokes[0].0 = Duration::from_secs(0).as_secs_f64();
         }
-
+        
         win.attrset(pancurses::A_NORMAL);
         win.mvaddstr(self.number_of_lines_to_print_text, 0, " Your typing speed is ");
         win.attrset(*self.color.get(&Color::Magenta).unwrap());
         win.addstr(format!(" {:.2} ", self.current_speed_wpm));
         win.attroff(*self.color.get(&Color::Magenta).unwrap());
         win.addstr(" WPM ");
-
+        
         win.attrset(*self.color.get(&Color::Black).unwrap());
         win.mvaddstr(self.number_of_lines_to_print_text + 2, 1, " Enter ");
         win.attrset(pancurses::A_NORMAL);
         win.addstr(" to see replay, ");
-
+        
         win.attrset(*self.color.get(&Color::Black).unwrap());
         win.addstr(" Tab ");
         win.attrset(pancurses::A_NORMAL);
         win.addstr(" to retry.");
-
+        
         win.attrset(*self.color.get(&Color::Black).unwrap());
         win.mvaddstr(self.number_of_lines_to_print_text + 3, 1, " Arrow keys ");
         win.attrset(pancurses::A_NORMAL);
-        win.addstr(" to change text ");
-
+        win.addstr(" to change text.");
+        
         win.attrset(*self.color.get(&Color::Black).unwrap());
         win.mvaddstr(self.number_of_lines_to_print_text + 4, 1, " CTRL+T ");
         win.attrset(pancurses::A_NORMAL);
         win.addstr(" to tweet result.");
-
+        
         self.print_stats(win);
-
+        
         self.first_key_pressed = false;
         self.end_time = SystemTime::now();
         self.current_string = "".to_string();
         self.current_word = "".to_string();
         self.token_index = 0;
-
+        
         self.start_time = SystemTime::now();
         if !self.test_complete {
             win.refresh();
@@ -505,7 +505,8 @@ impl App {
     /// Print the bottom stats bar after each run.
     fn print_stats(&mut self, win: &pancurses::Window) {
         win.attrset(*self.color.get(&Color::Magenta).unwrap());
-        win.mvaddstr(self.window_height - 1, 0,
+        // todo: check if is should descent 2 or 1, now works with 2, but maybe it's because of "not implemented" print
+        win.mvaddstr(self.window_height - 2, 0,
                      format!(" WPM: {:.2} ", self.current_speed_wpm));
 
         win.attrset(*self.color.get(&Color::Green).unwrap());
