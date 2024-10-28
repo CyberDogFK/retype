@@ -64,7 +64,7 @@ pub struct App {
     // And a few other stats
     current_speed_wpm: f64,
     accuracy: f64,
-    time_taken: u64,
+    time_taken: f64,
 
     total_chars_typed: usize,
 
@@ -110,7 +110,7 @@ impl App {
             test_complete: false,
             current_speed_wpm: 0.0,
             accuracy: 0.0,
-            time_taken: 0,
+            time_taken: 0.0,
             total_chars_typed: 0,
             color: HashMap::new(),
             stdout: std::io::stdout(),
@@ -448,7 +448,7 @@ impl App {
             let total_chars_in_text = self.text_backup.len();
             let wrongly_typed_chars = self.total_chars_typed - total_chars_in_text;
             self.accuracy = accuracy(self.total_chars_typed, wrongly_typed_chars);
-            self.time_taken = timer::get_elapsed_minutes_since_first_keypress(self.start_time) as u64;
+            self.time_taken = timer::get_elapsed_minutes_since_first_keypress(self.start_time);
 
             self.mode = 1;
             // Find time difference between the key strokes
@@ -477,7 +477,7 @@ impl App {
         win.addstr(" to retry.");
 
         win.attrset(*self.color.get(&Color::Black).unwrap());
-        win.mvaddstr(self.number_of_lines_to_print_text + 3, 1, " Arrow keys");
+        win.mvaddstr(self.number_of_lines_to_print_text + 3, 1, " Arrow keys ");
         win.attrset(pancurses::A_NORMAL);
         win.addstr(" to change text ");
 
@@ -506,13 +506,13 @@ impl App {
     fn print_stats(&mut self, win: &pancurses::Window) {
         win.attrset(*self.color.get(&Color::Magenta).unwrap());
         win.mvaddstr(self.window_height - 1, 0,
-                     &format!(" WPM: {:.2} ", self.current_speed_wpm));
+                     format!(" WPM: {:.2} ", self.current_speed_wpm));
 
         win.attrset(*self.color.get(&Color::Green).unwrap());
-        win.addstr(&format!(" Time: {:.2} ", self.time_taken * 60));
+        win.addstr(format!(" Time: {:.2}s ", self.time_taken * 60.0));
 
         win.attrset(*self.color.get(&Color::Cyan).unwrap());
-        win.addstr(&format!(" Accuracy: {:.2} ", self.accuracy));
+        win.addstr(format!(" Accuracy: {:.2}% ", self.accuracy));
     }
 
     /// Clear a line on the window
@@ -534,7 +534,7 @@ impl App {
         self.current_speed_wpm = 0.0;
         self.total_chars_typed = 0;
         self.accuracy = 0.0;
-        self.time_taken = 0;
+        self.time_taken = 0.0;
         self.test_complete = false;
         pancurses::curs_set(1);
     }
