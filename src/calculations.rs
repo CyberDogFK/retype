@@ -8,13 +8,11 @@ use std::time::SystemTime;
 /// after which must be colored red (indicating mismatch).
 pub fn first_index_at_which_strings_differ(string1: &str, string2: &str) -> usize {
     let length = min(string1.len(), string2.len());
-    // todo: maybe we can use this to optimize the loop below
     let string1_chars: Vec<char> = string1.chars().collect();
     let string2_chars: Vec<char> = string2.chars().collect();
 
     for index in 0..length {
         // if string1.chars().nth(index) != string2.chars().nth(index) {
-        // todo: use this, return back if some error occurs
         if string1_chars[index] != string2_chars[index] {
             return index;
         }

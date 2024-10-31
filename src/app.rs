@@ -161,7 +161,7 @@ impl App {
 
                     // Tweet result
                     if is_ctrl_t(&key) {
-                        self.share_result()
+                        self.share_result().unwrap();
                     }
                 }
             }
@@ -293,8 +293,18 @@ impl App {
         }
     }
 
-    fn share_result(&mut self) {
-        todo!("SHARE RESULT NOT IMPLEMENTED YET");
+    /// Open twitter intent on a browser.
+    fn share_result(&mut self) -> std::io::Result<()> {
+        let message = 
+            format!("My typing speed is {:.2} WPM!\n\
+            Know yours on rstype.\n\
+            \"https://github.com/CyberDogFK/rstype\" by @CyberDogFK\n\
+            #TypingTest #Rust", self.current_speed_wpm);
+        // let message = message
+            // .replace("\n", "%0D")
+            // .replace("#", "%23");
+        let url = format!("https://twitter.com/intent/tweet?text={}", message);
+        open::that(url)
     }
 
     /// Erase the last typed word
