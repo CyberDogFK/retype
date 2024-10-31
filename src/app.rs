@@ -300,9 +300,6 @@ impl App {
             Know yours on rstype.\n\
             \"https://github.com/CyberDogFK/rstype\" by @CyberDogFK\n\
             #TypingTest #Rust", self.current_speed_wpm);
-        // let message = message
-            // .replace("\n", "%0D")
-            // .replace("#", "%23");
         let url = format!("https://twitter.com/intent/tweet?text={}", message);
         open::that(url)
     }
@@ -518,8 +515,8 @@ impl App {
             history::save_history(
                 &self.text_id,
                 self.current_speed_wpm,
-                &format!("{:.2}", self.accuracy),
-            );
+                self.accuracy,
+            ).unwrap();
             self.test_complete = true;
         }
     }
