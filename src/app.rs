@@ -8,7 +8,7 @@ use crate::keycheck::{
     get_key_mapping, is_backspace, is_ctrl_backspace, is_ctrl_c, is_ctrl_t, is_enter, is_escape,
     is_resize, is_tab, is_valid_initial_key,
 };
-use crate::{history, timer, AppError, AppResult, PreparedText};
+use crate::{exit, history, timer, AppError, AppResult, PreparedText};
 use pancurses::{ColorPair, Input};
 use std::collections::HashMap;
 use std::ops::Add;
@@ -139,7 +139,7 @@ impl App {
                 if !self.first_key_pressed {
                     match key {
                         Input::Character('\u{1b}') => {
-                            exit()
+                            exit(0)
                         }
                         Input::KeyLeft => self.switch_text(win, -1)?,
                         Input::KeyRight => self.switch_text(win, 1)?,
@@ -254,7 +254,7 @@ impl App {
         if is_escape(key) {
             self.reset_test()
         } else if is_ctrl_c(key) {
-            exit()
+            exit(0)
         } else if is_resize(key) {
             self.resize(win)?;
         } else if is_backspace(key) {
@@ -403,7 +403,7 @@ impl App {
             number_of_lines_to_fit_text_in_window(&self.text, self.window_width) + 3;
         if self.number_of_lines_to_print_text + 7 >= self.window_height {
             eprintln!("Window too small to print given text");
-            exit();
+            exit(0)
         }
     }
 
@@ -439,7 +439,7 @@ impl App {
 
             if let Some(_key) = win.getch() {
                 if is_escape(&_key) || is_ctrl_c(&_key) {
-                    exit();
+                    exit(0)
                 }
             }
             self.key_printer(win, &key.1)?;
@@ -660,10 +660,4 @@ impl App {
 /// * `(i32, i32)` containing the height and width of the terminal
 fn get_dimensions(win: &pancurses::Window) -> (i32, i32) {
     win.get_max_yx()
-}
-
-/// Safely close the terminal window and exit the program
-fn exit() -> ! {
-    pancurses::endwin();
-    std::process::exit(0);
 }

@@ -120,3 +120,9 @@ pub fn load_text_from_file<P: AsRef<Path>>(file_path: P) -> Result<PreparedText,
         Err(FileError::FileDoesNotExist(get_path()))
     }
 }
+
+/// Safely close the terminal window and exit the program
+pub fn exit(code: i32) -> ! {
+    pancurses::endwin();
+    std::process::exit(code);
+}

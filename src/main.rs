@@ -4,8 +4,7 @@ use rstype::database::{
     load_text_from_database, load_text_from_database_based_on_difficulty,
     load_text_from_database_with_random_difficulty,
 };
-use rstype::{load_text_from_file, AppError, AppResult, PreparedText};
-use std::process::exit;
+use rstype::{exit, load_text_from_file, AppError, AppResult, PreparedText};
 use rstype::history::{show_history, NumberOfRecords};
 
 #[derive(Parser, Debug)]
@@ -27,9 +26,16 @@ struct Arguments {
     history: Option<u32>,
 }
 
-fn main() -> AppResult<()> {
+fn main() {
     let args = Arguments::parse();
 
+    if let Err(e) = run_app_with_args(args) {
+        eprintln!("{}", e);
+        exit(1);
+    }
+}
+
+fn run_app_with_args(args: Arguments) -> AppResult<()> {
     // Start the parser
     let prepared_text = resolve_command_line_args(args)?;
 
