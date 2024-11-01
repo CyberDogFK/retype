@@ -7,6 +7,7 @@ use rstype::database::{
 };
 use rstype::{load_text_from_file, PreparedText};
 use std::process::exit;
+use rstype::history::{show_history, NumberOfRecords};
 
 #[derive(Parser, Debug)]
 struct Arguments {
@@ -22,9 +23,9 @@ struct Arguments {
     #[clap(short, long, value_name = "N", default_value = "2")]
     /// Choose difficulty withing range 1-5
     difficulty: Option<u32>,
-    #[clap(short = 'H', long, action)]
+    #[clap(short = 'H', long, default_missing_value="0", require_equals = false, num_args=0..=1)]
     /// Show rstype score history
-    history: bool,
+    history: Option<u32>,
 }
 
 fn main() {
@@ -46,8 +47,13 @@ fn resolve_command_line_args(args: Arguments) -> PreparedText {
     let prepared_text: PreparedText = if args.version {
         println!("Rstype version 0.1.0");
         exit(0)
-    } else if args.history {
-        todo!("History not implemented yet");
+    } else if let Some(history) = args.history {
+        let number_of_records = match history {
+            0 => NumberOfRecords::All,
+            _ => NumberOfRecords::Last(history as usize),
+        };
+        show_history(number_of_records).unwrap();
+        exit(0)
     } else if let Some(file_path) = args.file {
         load_text_from_file(file_path)
     } else if let Some(id) = args.id {
