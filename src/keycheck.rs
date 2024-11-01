@@ -23,7 +23,11 @@ pub fn is_ctrl_t(key: &pancurses::Input) -> bool {
 }
 
 pub fn is_enter(key: &pancurses::Input) -> bool {
-    matches!(key, pancurses::Input::KeyEnter)
+    match key {
+        pancurses::Input::Character(c) => *c == '\n',
+        pancurses::Input::KeyEnter => true,
+        _ => false
+    }
 }
 
 pub fn is_tab(key: &pancurses::Input) -> bool {

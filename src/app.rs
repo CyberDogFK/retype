@@ -10,6 +10,7 @@ use crate::keycheck::{
 use crate::{history, timer, PreparedText};
 use pancurses::{ColorPair, Input};
 use std::collections::HashMap;
+use std::ops::Add;
 use std::time;
 use std::time::{Duration, SystemTime};
 
@@ -132,8 +133,7 @@ impl App {
                 if !self.first_key_pressed {
                     match key {
                         Input::Character('\u{1b}') => {
-                            pancurses::endwin();
-                            std::process::exit(0);
+                            exit()
                         }
                         Input::KeyLeft => self.switch_text(win, -1),
                         Input::KeyRight => self.switch_text(win, 1),
@@ -249,8 +249,7 @@ impl App {
         if is_escape(key) {
             self.reset_test()
         } else if is_ctrl_c(key) {
-            pancurses::endwin();
-            std::process::exit(0);
+            exit()
         } else if is_resize(key) {
             self.resize(win);
         } else if is_backspace(key) {
@@ -351,9 +350,9 @@ impl App {
     /// Print setup text at beginning of each typing sessions.
     fn setup_print(&mut self, win: &pancurses::Window) {
         win.attrset(*self.color.get(&Color::Cyan).unwrap());
-        win.mvaddstr(0, 0, format!("ID:{} ", self.text_id));
+        win.mvaddstr(0, 0, format!(" ID:{} ", self.text_id));
         win.attrset(*self.color.get(&Color::Blue).unwrap());
-        win.mvaddstr(0, self.window_width / 2 - 5, " MITYPE");
+        win.mvaddstr(0, self.window_width / 2 - 4, " MITYPE ");
 
         // Text is printed BOLD initially
         // It is dimmed as user types on top of it
@@ -384,14 +383,49 @@ impl App {
         self.number_of_lines_to_print_text =
             number_of_lines_to_fit_text_in_window(&self.text, self.window_width) + 3;
         if self.number_of_lines_to_print_text + 7 >= self.window_height {
-            pancurses::endwin();
             eprintln!("Window too small to print given text");
-            std::process::exit(1);
+            exit();
         }
     }
 
+    /// Play out a recordning of the user's last session
     fn replay(&mut self, win: &pancurses::Window) {
-        todo!("REPLAY NOT IMPLEMENTED YET");
+        win.clear();
+        self.print_stats(win);
+        win.mvaddstr(self.number_of_lines_to_print_text + 2, 0, " ".repeat(self.window_width as usize));
+        pancurses::curs_set(1);
+        
+        win.attrset(*self.color.get(&Color::Cyan).unwrap());
+        win.mvaddstr(
+            0,
+            self.window_width,
+            format!(" {} ", self.current_speed_wpm),
+        );
+        win.attrset(pancurses::A_NORMAL);
+        
+        self.setup_print(win);
+        
+        win.timeout(10);
+        
+        let mut next_tick = SystemTime::now();
+        for key in &self.key_strokes.clone() {
+            next_tick = next_tick.add(Duration::from_secs_f64(key.0));
+            let wait_duration = 0.0_f64.max(next_tick.duration_since(time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs_f64() - SystemTime::now()
+                .duration_since(time::UNIX_EPOCH)
+                .unwrap().as_secs_f64()
+            );
+            std::thread::sleep(Duration::from_secs_f64(wait_duration));
+            
+            if let Some(_key) = win.getch() {
+                if is_escape(&_key) || is_ctrl_c(&_key) {
+                    exit();
+                }
+            }
+            self.key_printer(win, &key.1);
+        }
+        win.timeout(100);
     }
 
     /// Report on typing session results
@@ -405,7 +439,6 @@ impl App {
             win.attrset(*self.color.get(&Color::Red).unwrap());
             win.mvaddstr(self.number_of_lines_to_print_text, 0, &self.current_word);
         } else {
-            // win.attroff(*self.color.get(&Color::Red).unwrap());
             win.mvaddstr(self.number_of_lines_to_print_text, 0, &self.current_word);
         }
 
@@ -464,7 +497,7 @@ impl App {
             self.mode = 1;
             // Find time difference between the key strokes
             // The key_strokes list is storing the time at which the key is pressed
-            for index in (1..(self.key_strokes.len() - 1)).rev() {
+            for index in (1..=(self.key_strokes.len() - 1)).rev() {
                 self.key_strokes[index].0 -= self.key_strokes[index - 1].0;
             }
             self.key_strokes[0].0 = Duration::from_secs(0).as_secs_f64();
@@ -594,4 +627,9 @@ impl App {
 /// * `(i32, i32)` containing the height and width of the terminal
 fn get_dimensions(win: &pancurses::Window) -> (i32, i32) {
     win.get_max_yx()
+}
+
+fn exit() {
+    pancurses::endwin();
+    std::process::exit(0);
 }
