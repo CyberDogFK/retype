@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use csv::StringRecord;
 use crate::history::HistoryError::{CsvError, IoError};
 
+#[derive(Debug)]
 pub enum HistoryError {
     CsvError(csv::Error),
     IoError(std::io::Error),
@@ -32,12 +33,6 @@ impl std::fmt::Display for HistoryError {
                 write!(f, "The history file is empty")
             }
         }
-    }
-}
-
-impl std::fmt::Debug for HistoryError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
     }
 }
 

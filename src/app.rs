@@ -181,7 +181,7 @@ impl App {
             self.window_width = window_width;
         }
         // This works by adding extra spaces to the text where needed
-        self.text = word_wrap(&self.text, self.window_width);
+        self.text = word_wrap(&self.text, self.window_width).unwrap();
 
         // Check if we can fit text in current window after adding word wrap
         self.screen_size_check();
@@ -282,7 +282,7 @@ impl App {
 
     /// Accept finalized word
     fn check_word(&mut self) {
-        let spc = get_space_count_after_ith_word(self.current_string.len(), &self.text);
+        let spc = get_space_count_after_ith_word(self.current_string.len(), &self.text).unwrap();
         if self.current_word == self.tokens[self.token_index] {
             self.token_index += 1;
             self.current_word = "".to_string();
@@ -339,7 +339,7 @@ impl App {
         let (window_height, window_width) = get_dimensions(win);
         self.window_height = window_height;
         self.window_width = window_width;
-        self.text = word_wrap(&self.text_backup, self.window_width);
+        self.text = word_wrap(&self.text_backup, self.window_width).unwrap();
 
         self.screen_size_check();
 
@@ -524,9 +524,8 @@ impl App {
     /// Print the bottom stats bar after each run.
     fn print_stats(&mut self, win: &pancurses::Window) {
         win.attrset(*self.color.get(&Color::Magenta).unwrap());
-        // todo: check if is should descent 2 or 1, now works with 2, but maybe it's because of "not implemented" print
         win.mvaddstr(
-            self.window_height - 2,
+            self.window_height - 1,
             0,
             format!(" WPM: {:.2} ", self.current_speed_wpm),
         );
@@ -579,7 +578,7 @@ impl App {
         self.text = self.tokens.join(" ");
         self.text_backup = self.text.clone();
 
-        self.text = word_wrap(&self.text, self.window_width);
+        self.text = word_wrap(&self.text, self.window_width).unwrap();
 
         self.reset_test();
         self.setup_print(win);

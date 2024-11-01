@@ -55,17 +55,20 @@ fn resolve_command_line_args(args: Arguments) -> PreparedText {
         show_history(number_of_records).unwrap();
         exit(0)
     } else if let Some(file_path) = args.file {
-        load_text_from_file(file_path)
+        load_text_from_file(file_path).unwrap()
     } else if let Some(id) = args.id {
-        load_text_from_database(id, database_file)
+        let s = load_text_from_database(id, database_file);
+        s.unwrap()
     } else if let Some(difficulty) = args.difficulty {
-        load_text_from_database_based_on_difficulty(difficulty, database_file)
+        let s = load_text_from_database_based_on_difficulty(difficulty, database_file);
+        s.unwrap()
     } else {
-        load_text_from_database_with_random_difficulty(database_file)
-    }
-    .unwrap_or_else(|e| {
-        error!("{}", e);
-        exit(1)
-    });
+        let s = load_text_from_database_with_random_difficulty(database_file);
+        s.unwrap()
+    };
+    // .unwrap_or_else(|e| {
+    //     error!("{}", e);
+    //     exit(1)
+    // });
     prepared_text
 }
