@@ -3,7 +3,6 @@ use std::fmt::Formatter;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use csv::StringRecord;
-use crate::history::HistoryError::{CsvError, IoError};
 
 #[derive(Debug)]
 pub enum HistoryError {
@@ -110,7 +109,7 @@ pub fn show_history(number_of_records: NumberOfRecords) -> Result<(), HistoryErr
     }
 
     println!("Last {} records:", records.len());
-    println!("ID\tWPM\tDATE\tTIME\ttACCURACY");
+    println!("ID\tWPM\tDATE\t\tTIME\t\tACCURACY");
     for record in records {
         let formatter_row_data = record.iter()
             .map(|s| s.to_string())
@@ -137,12 +136,13 @@ pub fn save_history(text_id: &str, current_speed_wpm: f64, accuracy: f64) -> Res
         writer.write_record(["ID", "WPM", "DATE", "TIME", "ACCURACY"])?;
     }
     let current_time = chrono::Local::now();
+    let format_date = current_time.format("%Y-%m-%d").to_string();
     let format_time = current_time.format("%H:%M:%S").to_string();
 
     let test_data = [
         text_id,
         &format!("{:.2}", current_speed_wpm),
-        &current_time.day().to_string(),
+        &format_date,
         &format_time,
         &format!("{:.2}", accuracy),
     ];
