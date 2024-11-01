@@ -1,11 +1,10 @@
 use clap::Parser;
-use log::error;
 use rstype::app::App;
 use rstype::database::{
     load_text_from_database, load_text_from_database_based_on_difficulty,
     load_text_from_database_with_random_difficulty,
 };
-use rstype::{load_text_from_file, PreparedText};
+use rstype::{load_text_from_file, AppError, AppResult, PreparedText};
 use std::process::exit;
 use rstype::history::{show_history, NumberOfRecords};
 
@@ -28,21 +27,21 @@ struct Arguments {
     history: Option<u32>,
 }
 
-fn main() {
+fn main() -> AppResult<()> {
     let args = Arguments::parse();
 
     // Start the parser
-    let prepared_text = resolve_command_line_args(args);
+    let prepared_text = resolve_command_line_args(args)?;
 
     let mut app = App::from_prepared_text(prepared_text);
 
     let window = pancurses::initscr();
     pancurses::start_color();
     window.refresh();
-    app.main(&window);
+    app.run(&window)
 }
 
-fn resolve_command_line_args(args: Arguments) -> PreparedText {
+fn resolve_command_line_args(args: Arguments) -> Result<PreparedText, AppError> {
     let database_file = "data.db";
     let prepared_text: PreparedText = if args.version {
         println!("Rstype version 0.1.0");
@@ -52,23 +51,16 @@ fn resolve_command_line_args(args: Arguments) -> PreparedText {
             0 => NumberOfRecords::All,
             _ => NumberOfRecords::Last(history as usize),
         };
-        show_history(number_of_records).unwrap();
+        show_history(number_of_records)?;
         exit(0)
     } else if let Some(file_path) = args.file {
         load_text_from_file(file_path).unwrap()
     } else if let Some(id) = args.id {
-        let s = load_text_from_database(id, database_file);
-        s.unwrap()
+        load_text_from_database(id, database_file)?
     } else if let Some(difficulty) = args.difficulty {
-        let s = load_text_from_database_based_on_difficulty(difficulty, database_file);
-        s.unwrap()
+        load_text_from_database_based_on_difficulty(difficulty, database_file)?
     } else {
-        let s = load_text_from_database_with_random_difficulty(database_file);
-        s.unwrap()
+        load_text_from_database_with_random_difficulty(database_file)?
     };
-    // .unwrap_or_else(|e| {
-    //     error!("{}", e);
-    //     exit(1)
-    // });
-    prepared_text
+    Ok(prepared_text)
 }

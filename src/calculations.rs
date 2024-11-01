@@ -1,7 +1,7 @@
 use crate::timer;
 use std::cmp::min;
-use std::fmt::Formatter;
-use std::time::SystemTime;
+use std::time::{SystemTime, SystemTimeError};
+use crate::AppError;
 
 /// Return index at which there is a change in strings.
 ///
@@ -13,7 +13,6 @@ pub fn first_index_at_which_strings_differ(string1: &str, string2: &str) -> usiz
     let string2_chars: Vec<char> = string2.chars().collect();
 
     for index in 0..length {
-        // if string1.chars().nth(index) != string2.chars().nth(index) {
         if string1_chars[index] != string2_chars[index] {
             return index;
         }
@@ -33,29 +32,20 @@ pub fn number_of_lines_to_fit_text_in_window(string: &str, window_width: i32) ->
 /// * `start_time` - Time at which typing started the sample text.
 /// # Returns:
 /// * `f64` Speed in words per minute
-pub fn speed_in_wpm(text: &[String], start_time: SystemTime) -> f64 {
-    let time_taken = timer::get_elapsed_minutes_since_first_keypress(start_time);
-    text.len() as f64 / time_taken
+pub fn speed_in_wpm(text: &[String], start_time: SystemTime) -> Result<f64, SystemTimeError> {
+    let time_taken = timer::get_elapsed_minutes_since_first_keypress(start_time)?;
+    Ok(text.len() as f64 / time_taken)
 }
 
 pub fn accuracy(total_chars_typed: usize, wrongly_typed: usize) -> f64 {
     ((total_chars_typed - wrongly_typed) as f64 / total_chars_typed as f64) * 100.0
 }
 
-#[derive(Debug)]
-pub struct NoIndexFoundError(usize);
-
-impl std::fmt::Display for NoIndexFoundError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "No index found at {}", self.0)
-    }
-}
-
 // Since index is copy value, we can modify it without affecting the original value
-pub fn get_space_count_after_ith_word(mut index: usize, text: &str) -> Result<usize, NoIndexFoundError> {
+pub fn get_space_count_after_ith_word(mut index: usize, text: &str) -> Result<usize, AppError> {
     let mut count = 0;
     while index < text.len() && text.chars().nth(index)
-        .ok_or(NoIndexFoundError(index))? == ' ' {
+        .ok_or(AppError::NoIndexFoundError(index))? == ' ' {
         index += 1;
         count += 1;
     }
@@ -65,7 +55,7 @@ pub fn get_space_count_after_ith_word(mut index: usize, text: &str) -> Result<us
 /// Wrap text on the screen according to the window width.
 ///
 /// Returns text with extra spaces which makes the string word wrap.
-pub fn word_wrap(text: &str, width: i32) -> Result<String, NoIndexFoundError> {
+pub fn word_wrap(text: &str, width: i32) -> Result<String, AppError> {
     // For the end of each line, move backwards until you find a space.
     // When you do, append those many spaces after the single space.
     let mut text = text.to_string();
@@ -79,11 +69,11 @@ pub fn word_wrap(text: &str, width: i32) -> Result<String, NoIndexFoundError> {
         let mut index: usize = (line * width - 1) as usize;
 
         // Continue if already a space
-        if text.chars().nth(index).ok_or(NoIndexFoundError(index))? == ' ' {
+        if text.chars().nth(index).ok_or(AppError::NoIndexFoundError(index))? == ' ' {
             continue;
         }
 
-        index = text[0..index].rfind(' ').ok_or(NoIndexFoundError(index))?;
+        index = text[0..index].rfind(' ').ok_or(AppError::NoIndexFoundError(index))?;
 
         let space_count = line * width - index as i32;
         let space_string = " ".repeat(space_count as usize);

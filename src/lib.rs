@@ -1,4 +1,7 @@
+use std::fmt::Formatter;
 use std::path::Path;
+use std::time::SystemTimeError;
+use crate::database::DatabaseError;
 
 pub mod app;
 pub mod calculations;
@@ -6,6 +9,76 @@ pub mod database;
 pub mod history;
 pub mod keycheck;
 pub mod timer;
+
+pub type AppResult<T> = Result<T, AppError>;
+
+#[derive(Debug)]
+pub enum AppError {
+    NoIndexFoundError(usize),
+    NoCharFoundError(char),
+    ColorNotFoundError(app::Color),
+    TimeError(SystemTimeError),
+    AppDatabaseError(DatabaseError),
+    ParsingError(std::num::ParseIntError),
+    AppHistoryError(history::HistoryError),
+    TwitterError { url: String , error_description: String },
+}
+
+impl std::fmt::Display for AppError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AppError::NoIndexFoundError(index) => {
+                write!(f, "No index found in text: {}", index)
+            }
+            AppError::NoCharFoundError(c) => {
+                write!(f, "No character found in text: {}", c)
+            }
+            AppError::ColorNotFoundError(color) => {
+                write!(f, "Color for terminal not found: {:?}", color)
+            }
+            AppError::TimeError(e) => {
+                write!(f, "Time error: {}", e)
+            }
+            AppError::AppDatabaseError(e) => {
+                write!(f, "Database error: {}", e)
+            }
+            AppError::ParsingError(e) => {
+                write!(f, "Parsing error: {}", e)
+            }
+            AppError::AppHistoryError(e) => {
+                write!(f, "History error: {}", e)
+            }
+            AppError::TwitterError { url, error_description } => {
+                write!(f, "Can't tweet result: {}\n{}", url, error_description)
+            }
+        }
+    }
+}
+
+impl From<history::HistoryError> for AppError {
+    fn from(value: history::HistoryError) -> Self {
+        AppError::AppHistoryError(value)
+    }
+}
+
+impl From<std::num::ParseIntError> for AppError {
+    fn from(value: std::num::ParseIntError) -> Self {
+        AppError::ParsingError(value)
+    }
+}
+
+impl From<DatabaseError> for AppError {
+    fn from(value: DatabaseError) -> Self {
+        AppError::AppDatabaseError(value)
+    }
+}
+
+impl From<SystemTimeError> for AppError {
+    fn from(value: SystemTimeError) -> Self {
+        AppError::TimeError(value)
+    }
+}
+
 
 #[derive(Debug)]
 pub enum FileError {

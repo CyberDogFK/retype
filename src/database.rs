@@ -1,25 +1,54 @@
+use std::fmt::Formatter;
 use crate::PreparedText;
 use rand::Rng;
+
+#[derive(Debug)]
+pub enum DatabaseError {
+    SqliteError(sqlite::Error),
+    OutOfRangeError(u32),
+    DifficultyOutOfRangeError(u32),
+}
+
+impl From<sqlite::Error> for DatabaseError {
+    fn from(error: sqlite::Error) -> Self {
+        DatabaseError::SqliteError(error)
+    }
+}
+
+impl std::fmt::Display for DatabaseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DatabaseError::SqliteError(e) => {
+                write!(f, "Sqlite error: {}", e)
+            }
+            DatabaseError::OutOfRangeError(n) => {
+                write!(f, "ID out of range: {}, select in range [1,6000]", n)
+            }
+            DatabaseError::DifficultyOutOfRangeError(n) => {
+                write!(f, "Difficulty out of range: {}, select in range [1,5]", n)
+            }
+        }
+    }
+}
 
 /// Load given text from database with given id.
 /// # Arguments
 /// * `text_id` - ID of text to load
 /// # Returns
 /// * `Result<FileText>` containing file contents or error message
-pub fn load_text_from_database(text_id: u32, database_path: &str) -> Result<PreparedText, String> {
+pub fn load_text_from_database(text_id: u32, database_path: &str) -> Result<PreparedText, DatabaseError> {
     let row_count = 6000;
     if 1 <= text_id && text_id <= row_count {
-        let text = fetch_text_with_id(text_id, database_path) // data.db
-            .map_err(|e| format!("Error fetching text: {}", e))?;
+        let text = fetch_text_with_id(text_id, database_path)?;
         Ok((text, text_id.to_string()))
     } else {
-        Err(format!("ID out of range: {}", text_id))
+        Err(DatabaseError::OutOfRangeError(text_id))
     }
 }
 
 pub fn load_text_from_database_with_random_difficulty(
     database_path: &str,
-) -> Result<PreparedText, String> {
+) -> Result<PreparedText, DatabaseError> {
     let random = rand::thread_rng().gen_range(1..6);
     load_text_from_database_based_on_difficulty(random, database_path)
 }
@@ -32,7 +61,7 @@ pub fn load_text_from_database_with_random_difficulty(
 pub fn load_text_from_database_based_on_difficulty(
     difficulty: u32,
     database_path: &str,
-) -> Result<PreparedText, String> {
+) -> Result<PreparedText, DatabaseError> {
     let max_level = 5;
 
     if 1 <= difficulty && difficulty <= max_level {
@@ -41,14 +70,10 @@ pub fn load_text_from_database_based_on_difficulty(
         let lower_limit = upper_limit - 1200 + 1;
 
         let text_id = rand::thread_rng().gen_range(lower_limit..upper_limit + 1);
-        let text = fetch_text_with_id(text_id, database_path)
-            .map_err(|e| format!("Error fetching text: {}", e))?;
+        let text = fetch_text_with_id(text_id, database_path)?;
         Ok((text, text_id.to_string()))
     } else {
-        Err(format!(
-            "Difficulty out of range: {}, select in range [1,5]",
-            difficulty
-        ))
+        Err(DatabaseError::DifficultyOutOfRangeError(difficulty))
     }
 }
 
